@@ -1,4 +1,6 @@
 const express = require('express');
+const config = require('config');
+const morgan = require('morgan');
 const logger = require('./logger');
 const Joi = require('joi');
 const app = express();
@@ -6,8 +8,13 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
 app.use(logger);
-const port = process.env.PORT || 3000;
 
+//Configuracion de entornos
+console.log('La aplicación: ' + config.get('nombre'));
+//Uso de middleware
+app.use(morgan('tiny'));
+
+const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log('Esuchando en el puerto', port, '...');
 })
