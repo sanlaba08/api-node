@@ -1,7 +1,11 @@
 const express = require('express');
+const logger = require('./logger');
 const Joi = require('joi');
 const app = express();
+
 app.use(express.json());
+app.use(express.urlencoded({extended:true}));
+app.use(logger);
 const port = process.env.PORT || 3000;
 
 app.listen(port, () => {
@@ -22,18 +26,17 @@ app.get('/api/users', (req, res) => {
 
 //Consulta de un usuario en especifico
 app.get('/api/users/:id', (req, res) => {
-    userID = parseInt(req.params.id);
-    let user = users.find(user => user.id === userID);
-    if(!user) res.status(404).send('El usuario no fue encontrado');
+    let user = userExist(req.params.id);
+    if(!user){
+        res.status(404).send('El usuario no fue encontrado');
+        return;
+    } 
     res.send(user);
 });
 
 //Crear un usuario
 app.post('/api/users', (req, res) => {
-    const schema = Joi.object({
-        name: Joi.string().min(3).required(),
-    });
-    const {error, value} = schema.validate({ name: req.body.name });
+    const {error, value} = userValidate(req.body.name)
 
     if(!error){
         const user = {
@@ -49,14 +52,14 @@ app.post('/api/users', (req, res) => {
 
 //Modificar usuario
 app.put('/api/users/:id', (req, res) => {
-    userID = parseInt(req.params.id);
-    let user = users.find(user => user.id === userID);
-    if(!user) res.status(404).send('El usuario no fue encontrado');
+    let user = userExist(req.params.id);
 
-    const schema = Joi.object({
-        name: Joi.string().min(3).required(),
-    });
-    const {error, value} = schema.validate({ name: req.body.name });
+    if(!user){  
+        res.status(404).send('El usuario no fue encontrado');
+        return;
+    } 
+
+    const {error, value} = userValidate(req.body.name)
     if(error){
         res.status(400).send(error.message);
         return;
@@ -66,3 +69,30 @@ app.put('/api/users/:id', (req, res) => {
     res.send(user);
 });
 
+//Eliminar usuario
+app.delete('/api/users/:id', (req, res) => {
+    let user = userExist(req.params.id);
+    console.log(user);
+    if(!user){  
+        res.status(404).send('El usuario no fue encontrado');
+        return;
+    } 
+
+    const index = users.indexOf(user);
+    users.splice(index, 1);
+    res.send(users);
+});
+
+
+
+function userExist(userID){
+    return users.find(user => user.id === parseInt(userID));
+}
+
+function userValidate(pName){
+    const schema = Joi.object({
+        name: Joi.string().min(3).required(),
+    });
+
+    return schema.validate({ name: pName });
+}
